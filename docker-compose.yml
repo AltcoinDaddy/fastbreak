@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: fastbreak
+      POSTGRES_USER: fastbreak
+      POSTGRES_PASSWORD: fastbreak_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastbreak"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Flow Emulator
+  flow-emulator:
+    image: gcr.io/flow-container-registry/emulator:latest
+    ports:
+      - "3569:3569"
+      - "8080:8080"
+    command: ["flow", "emulator", "start", "--verbose"]
+    volumes:
+      - ./contracts:/app/contracts
+      - ./flow.json:/app/flow.json
+    working_dir: /app
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://fastbreak:fastbreak_dev@postgres:5432/fastbreak
+      - REDIS_URL=redis://redis:6379
+      - FLOW_EMULATOR_URL=http://flow-emulator:8080
+    depends_on:
+      - postgres
+      - redis
+      - flow-emulator
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+
+  # AI Scouting Service
+  ai-scouting:
+    build:
+      context: ./services/ai-scouting
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://fastbreak:fastbreak_dev@postgres:5432/fastbreak
+      - REDIS_URL=redis://redis:6379
+      - NBA_STATS_API_KEY=${NBA_STATS_API_KEY}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/ai-scouting:/app
+
+  # Marketplace Monitor
+  marketplace-monitor:
+    build:
+      context: ./services/marketplace-monitor
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8002:8002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://fastbreak:fastbreak_dev@postgres:5432/fastbreak
+      - REDIS_URL=redis://redis:6379
+      - TOP_SHOT_API_KEY=${TOP_SHOT_API_KEY}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/marketplace-monitor:/app
+      - /app/node_modules
+
+  # Forte Actions Service
+  forte-actions:
+    build:
+      context: ./services/forte-actions
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8008:8008"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://fastbreak:fastbreak_dev@postgres:5432/fastbreak
+      - REDIS_URL=redis://redis:6379
+      - FLOW_EMULATOR_URL=http://flow-emulator:8080
+      - TRADING_SERVICE_URL=http://trading-service:8003
+      - MAX_CONCURRENT_ACTIONS=5
+      - ACTION_TIMEOUT_MS=300000
+      - PURCHASE_ACTION_ENABLED=true
+      - ARBITRAGE_ACTION_ENABLED=true
+      - REBALANCE_ACTION_ENABLED=true
+    depends_on:
+      - postgres
+      - redis
+      - flow-emulator
+    volumes:
+      - ./services/forte-actions:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:

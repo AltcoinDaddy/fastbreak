@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "testnet": "access.devnet.nodes.onflow.org:9000",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": "2eae2f31cb5b756151fa11d82949c634b8f28796a711d7eb1e52cc301ed11111"
+    },
+    "testnet-account": {
+      "address": "0x0000000000000000",
+      "key": {
+        "type": "file",
+        "location": "./testnet-account-key.pem"
+      }
+    }
+  },
+  "contracts": {
+    "FastBreakController": {
+      "source": "./FastBreakController.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "0x0000000000000000"
+      }
+    },
+    "SafetyControls": {
+      "source": "./SafetyControls.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "0x0000000000000000"
+      }
+    },
+    "TradeAnalytics": {
+      "source": "./TradeAnalytics.cdc",
+      "aliases": {
+        "emulator": "f8d6e0586b0a20c7",
+        "testnet": "0x0000000000000000"
+      }
+    }
+  },
+  "deployments": {
+    "emulator": {
+      "emulator-account": [
+        "FastBreakController",
+        "SafetyControls", 
+        "TradeAnalytics"
+      ]
+    },
+    "testnet": {
+      "testnet-account": [
+        "FastBreakController",
+        "SafetyControls",
+        "TradeAnalytics"
+      ]
+    }
+  }
+}

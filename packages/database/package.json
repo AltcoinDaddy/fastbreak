@@ -1,0 +1,45 @@
+{
+  "name": "@fastbreak/database",
+  "version": "1.0.0",
+  "description": "Database schema and migrations for FastBreak",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "migrate": "node dist/migrate.js",
+    "seed": "node dist/seed.js seed",
+    "seed:clear": "node dist/seed.js clear",
+    "seed:reset": "node dist/seed.js reset",
+    "optimize": "tsx src/scripts/optimize-database.ts",
+    "analyze": "tsx src/scripts/analyze-performance.ts"
+  },
+  "dependencies": {
+    "@fastbreak/types": "^1.0.0",
+    "@fastbreak/monitoring": "^1.0.0",
+    "pg": "^8.11.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/pg": "^8.10.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.1.6",
+    "tsx": "^4.6.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/src"],
+    "testMatch": ["**/__tests__/**/*.test.ts"],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/__tests__/**"
+    ]
+  }
+}

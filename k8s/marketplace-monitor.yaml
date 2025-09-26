@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marketplace-monitor
+  namespace: fastbreak-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: marketplace-monitor
+  template:
+    metadata:
+      labels:
+        app: marketplace-monitor
+    spec:
+      containers:
+      - name: marketplace-monitor
+        image: ghcr.io/fastbreak/marketplace-monitor:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: fastbreak-config
+              key: NODE_ENV
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fastbreak-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fastbreak-config
+              key: REDIS_URL
+        - name: TOP_SHOT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fastbreak-secrets
+              key: TOP_SHOT_API_KEY
+        - name: FLOWTY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fastbreak-secrets
+              key: FLOWTY_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: marketplace-monitor-service
+  namespace: fastbreak-production
+spec:
+  selector:
+    app: marketplace-monitor
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP

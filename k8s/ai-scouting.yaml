@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-scouting
+  namespace: fastbreak-production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-scouting
+  template:
+    metadata:
+      labels:
+        app: ai-scouting
+    spec:
+      containers:
+      - name: ai-scouting
+        image: ghcr.io/fastbreak/ai-scouting:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fastbreak-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: fastbreak-config
+              key: REDIS_URL
+        - name: NBA_STATS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fastbreak-secrets
+              key: NBA_STATS_API_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fastbreak-secrets
+              key: OPENAI_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "300m"
+          limits:
+            memory: "1Gi"
+            cpu: "800m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-scouting-service
+  namespace: fastbreak-production
+spec:
+  selector:
+    app: ai-scouting
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP

@@ -1,0 +1,393 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint
+      
+      - name: Check Prettier formatting
+        run: npm run format -- --check
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fastbreak_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Flow CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Python dependencies
+        run: |
+          cd services/ai-scouting
+          pip install -r requirements.txt
+      
+      - name: Run database migrations
+        run: |
+          cd packages/database
+          npm run migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastbreak_test
+      
+      - name: Run unit tests
+        run: npm run test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastbreak_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+      
+      - name: Run smart contract tests
+        run: |
+          cd contracts
+          flow test --cover
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, unit-tests]
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fastbreak_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Flow CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Python dependencies
+        run: |
+          cd services/ai-scouting
+          pip install -r requirements.txt
+      
+      - name: Start Flow emulator
+        run: |
+          flow emulator start &
+          sleep 10
+      
+      - name: Deploy contracts
+        run: |
+          cd contracts
+          flow project deploy --network emulator
+      
+      - name: Run database migrations
+        run: |
+          cd packages/database
+          npm run migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastbreak_test
+      
+      - name: Start services for integration tests
+        run: |
+          npm run docker:up &
+          sleep 30
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastbreak_test
+          REDIS_URL: redis://localhost:6379
+          FLOW_EMULATOR_URL: http://localhost:8080
+      
+      - name: Run integration tests
+        run: |
+          cd tests/integration
+          npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fastbreak_test
+          REDIS_URL: redis://localhost:6379
+          FLOW_EMULATOR_URL: http://localhost:8080
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright browsers
+        run: |
+          cd tests/e2e
+          npm ci
+          npx playwright install --with-deps
+      
+      - name: Start application stack
+        run: |
+          npm run docker:up &
+          sleep 60
+        env:
+          NODE_ENV: test
+      
+      - name: Run Playwright tests
+        run: |
+          cd tests/e2e
+          npm test
+        env:
+          BASE_URL: http://localhost:3001
+      
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report/
+          retention-days: 30
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run npm audit
+        run: npm audit --audit-level moderate
+      
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, security-scan]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/api-gateway
+          file: ./services/api-gateway/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/api-gateway:latest
+            ghcr.io/${{ github.repository }}/api-gateway:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push AI Scouting Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/ai-scouting
+          file: ./services/ai-scouting/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/ai-scouting:latest
+            ghcr.io/${{ github.repository }}/ai-scouting:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push Marketplace Monitor
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/marketplace-monitor
+          file: ./services/marketplace-monitor/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/marketplace-monitor:latest
+            ghcr.io/${{ github.repository }}/marketplace-monitor:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/frontend
+          file: ./apps/frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+      
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+      
+      - name: Deploy to staging
+        run: |
+          export KUBECONFIG=kubeconfig
+          kubectl set image deployment/api-gateway api-gateway=ghcr.io/${{ github.repository }}/api-gateway:${{ github.sha }} -n fastbreak-staging
+          kubectl set image deployment/ai-scouting ai-scouting=ghcr.io/${{ github.repository }}/ai-scouting:${{ github.sha }} -n fastbreak-staging
+          kubectl set image deployment/marketplace-monitor marketplace-monitor=ghcr.io/${{ github.repository }}/marketplace-monitor:${{ github.sha }} -n fastbreak-staging
+          kubectl set image deployment/frontend frontend=ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} -n fastbreak-staging
+          kubectl rollout status deployment/api-gateway -n fastbreak-staging
+          kubectl rollout status deployment/ai-scouting -n fastbreak-staging
+          kubectl rollout status deployment/marketplace-monitor -n fastbreak-staging
+          kubectl rollout status deployment/frontend -n fastbreak-staging
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+      
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+      
+      - name: Deploy to production
+        run: |
+          export KUBECONFIG=kubeconfig
+          kubectl set image deployment/api-gateway api-gateway=ghcr.io/${{ github.repository }}/api-gateway:${{ github.sha }} -n fastbreak-production
+          kubectl set image deployment/ai-scouting ai-scouting=ghcr.io/${{ github.repository }}/ai-scouting:${{ github.sha }} -n fastbreak-production
+          kubectl set image deployment/marketplace-monitor marketplace-monitor=ghcr.io/${{ github.repository }}/marketplace-monitor:${{ github.sha }} -n fastbreak-production
+          kubectl set image deployment/frontend frontend=ghcr.io/${{ github.repository }}/frontend:${{ github.sha }} -n fastbreak-production
+          kubectl rollout status deployment/api-gateway -n fastbreak-production
+          kubectl rollout status deployment/ai-scouting -n fastbreak-production
+          kubectl rollout status deployment/marketplace-monitor -n fastbreak-production
+          kubectl rollout status deployment/frontend -n fastbreak-production
+      
+      - name: Run post-deployment health checks
+        run: |
+          export KUBECONFIG=kubeconfig
+          kubectl get pods -n fastbreak-production
+          kubectl get services -n fastbreak-production
+          # Add health check endpoints verification
+          curl -f https://api.fastbreak.app/health || exit 1

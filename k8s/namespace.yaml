@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fastbreak-production
+  labels:
+    name: fastbreak-production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fastbreak-staging
+  labels:
+    name: fastbreak-staging

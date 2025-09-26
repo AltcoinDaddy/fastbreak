@@ -1,0 +1,43 @@
+{
+  "emulators": {
+    "default": {
+      "port": 3569,
+      "serviceAccount": "emulator-account"
+    }
+  },
+  "contracts": {
+    "FastBreakController": "./contracts/FastBreakController.cdc",
+    "SafetyControls": "./contracts/SafetyControls.cdc",
+    "TradeAnalytics": "./contracts/TradeAnalytics.cdc"
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "testnet": "access.devnet.nodes.onflow.org:9000",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+      "address": "f8d6e0586b0a20c7",
+      "key": "2eae2f31cb5b756151fa11d82949c634b8f28796a711d7eb1e52cc301ed11111"
+    },
+    "testnet-account": {
+      "address": "$TESTNET_ADDRESS",
+      "key": {
+        "type": "hex",
+        "index": 0,
+        "signatureAlgorithm": "ECDSA_P256",
+        "hashAlgorithm": "SHA3_256",
+        "privateKey": "$TESTNET_PRIVATE_KEY"
+      }
+    }
+  },
+  "deployments": {
+    "emulator": {
+      "emulator-account": [
+        "FastBreakController",
+        "SafetyControls", 
+        "TradeAnalytics"
+      ]
+    }
+  }
+}

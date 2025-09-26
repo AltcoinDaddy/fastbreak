@@ -1,0 +1,51 @@
+{
+  "name": "@fastbreak/contracts",
+  "version": "1.0.0",
+  "description": "FastBreak Smart Contracts for Flow Blockchain",
+  "main": "scripts/deploy.js",
+  "scripts": {
+    "deploy:emulator": "FLOW_NETWORK=emulator node scripts/deploy.js",
+    "deploy:testnet": "FLOW_NETWORK=testnet node scripts/deploy.js",
+    "deploy:mainnet": "FLOW_NETWORK=mainnet node scripts/deploy.js",
+    "test": "flow test --cover --covercode=\"contracts\" cadence/tests/",
+    "test:watch": "flow test --watch cadence/tests/",
+    "emulator:start": "flow emulator start --verbose",
+    "emulator:stop": "pkill -f 'flow emulator'",
+    "lint": "flow cadence lint cadence/",
+    "format": "flow cadence format cadence/",
+    "docs": "flow cadence doc cadence/ --output docs/",
+    "verify": "node scripts/verify.js",
+    "migrate": "node scripts/migrate.js"
+  },
+  "dependencies": {
+    "@onflow/fcl": "^1.12.2",
+    "@onflow/types": "^1.2.3",
+    "@onflow/util-encode-key": "^1.1.0",
+    "elliptic": "^6.5.4",
+    "sha3": "^2.1.4"
+  },
+  "devDependencies": {
+    "@onflow/flow-js-testing": "^0.7.1",
+    "jest": "^29.7.0",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": [
+    "flow",
+    "blockchain",
+    "cadence",
+    "smart-contracts",
+    "nba-topshot",
+    "trading",
+    "defi"
+  ],
+  "author": "FastBreak Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fastbreak/contracts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fastbreak/contracts/issues"
+  },
+  "homepage": "https://github.com/fastbreak/contracts#readme"
+}

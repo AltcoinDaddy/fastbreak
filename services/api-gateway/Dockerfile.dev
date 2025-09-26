@@ -1,0 +1,31 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Copy shared packages
+COPY packages/ ./packages/
+
+# Copy service files
+COPY services/api-gateway/ ./services/api-gateway/
+
+# Install dependencies
+RUN npm ci
+
+# Build shared packages
+RUN npm run build --workspace=@fastbreak/types
+RUN npm run build --workspace=@fastbreak/shared
+
+# Build the service
+WORKDIR /app/services/api-gateway
+RUN npm run build
+
+# Create logs directory
+RUN mkdir -p logs
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

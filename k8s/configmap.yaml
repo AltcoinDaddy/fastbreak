@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastbreak-config
+  namespace: fastbreak-production
+data:
+  NODE_ENV: "production"
+  POSTGRES_DB: "fastbreak"
+  POSTGRES_USER: "fastbreak"
+  REDIS_URL: "redis://redis-service:6379"
+  DATABASE_URL: "postgresql://fastbreak:$(POSTGRES_PASSWORD)@postgres-service:5432/fastbreak"
+  FLOW_NETWORK: "mainnet"
+  NEXT_PUBLIC_API_URL: "https://api.fastbreak.app"
+  NEXT_PUBLIC_FLOW_NETWORK: "mainnet"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastbreak-config
+  namespace: fastbreak-staging
+data:
+  NODE_ENV: "staging"
+  POSTGRES_DB: "fastbreak_staging"
+  POSTGRES_USER: "fastbreak"
+  REDIS_URL: "redis://redis-service:6379"
+  DATABASE_URL: "postgresql://fastbreak:$(POSTGRES_PASSWORD)@postgres-service:5432/fastbreak_staging"
+  FLOW_NETWORK: "testnet"
+  NEXT_PUBLIC_API_URL: "https://api-staging.fastbreak.app"
+  NEXT_PUBLIC_FLOW_NETWORK: "testnet"

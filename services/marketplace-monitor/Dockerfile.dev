@@ -1,0 +1,33 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY ../../packages/types/package.json ../packages/types/
+COPY ../../packages/shared/package.json ../packages/shared/
+COPY ../../packages/database/package.json ../packages/database/
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+COPY ../../packages/types ../packages/types
+COPY ../../packages/shared ../packages/shared
+COPY ../../packages/database ../packages/database
+
+# Build shared packages
+RUN cd ../packages/types && npm run build
+RUN cd ../packages/shared && npm run build
+RUN cd ../packages/database && npm run build
+
+# Expose port
+EXPOSE 8002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8002/health || exit 1
+
+# Start in development mode
+CMD ["npm", "run", "dev"]
