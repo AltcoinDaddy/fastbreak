@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { createLogger } from '@fastbreak/monitoring';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger({ serviceName: 'index-manager' });
 

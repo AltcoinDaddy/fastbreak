@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Fix database package exports and structure
+- [-] 1. Fix database package exports and structure
   - Create proper index.ts file with all necessary exports
   - Export DatabaseManager class with proper typing
   - Export all repository classes (BudgetLimitsRepository, StrategyRepository, etc.)

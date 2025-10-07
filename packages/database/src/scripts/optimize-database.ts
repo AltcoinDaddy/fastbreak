@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { IndexManager } from '../optimization/index-manager';
 import { QueryOptimizer } from '../optimization/query-optimizer';
-import { createLogger } from '@fastbreak/monitoring';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger({ serviceName: 'database-optimizer' });
 
