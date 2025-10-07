@@ -13,9 +13,9 @@
     "format": "prettier --write src"
   },
   "dependencies": {
-    "@fastbreak/types": "1.0.0",
-    "@fastbreak/shared": "1.0.0",
-    "@fastbreak/database": "1.0.0",
+    "@fastbreak/types": "workspace:*",
+    "@fastbreak/shared": "workspace:*",
+    "@fastbreak/database": "workspace:*",
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "helmet": "^7.0.0",

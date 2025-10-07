@@ -15,8 +15,8 @@
     "benchmark": "tsx src/testing/fastbreak-benchmarks.ts"
   },
   "dependencies": {
-    "@fastbreak/types": "1.0.0",
-    "@fastbreak/monitoring": "1.0.0",
+    "@fastbreak/types": "workspace:*",
+    "@fastbreak/monitoring": "workspace:*",
     "winston": "^3.11.0",
     "uuid": "^9.0.1",
     "ioredis": "^5.3.2"

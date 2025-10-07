@@ -17,8 +17,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@fastbreak/database": "^1.0.0",
-    "@fastbreak/types": "^1.0.0",
+    "@fastbreak/database": "workspace:*",
+    "@fastbreak/types": "workspace:*",
     "@onflow/fcl": "^1.20.1",
     "@onflow/types": "^1.4.2",
     "axios": "^1.6.2",

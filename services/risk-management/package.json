@@ -15,8 +15,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@fastbreak/database": "^1.0.0",
-    "@fastbreak/types": "^1.0.0",
+    "@fastbreak/database": "workspace:*",
+    "@fastbreak/types": "workspace:*",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "decimal.js": "^10.6.0",

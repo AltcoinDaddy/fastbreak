@@ -3,32 +3,28 @@
   "version": "1.0.0",
   "description": "AI-powered NBA Top Shot auto-collector dApp on Flow blockchain",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "services/*",
-    "apps/*"
-  ],
+
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:gateway\" \"npm run dev:ai\" \"npm run dev:marketplace\" \"npm run dev:forte-actions\" \"npm run dev:notifications\" \"npm run dev:monitoring\"",
-    "dev:frontend": "cd apps/frontend && npm run dev",
-    "dev:gateway": "cd services/api-gateway && npm run dev",
+    "dev:frontend": "pnpm --filter @fastbreak/frontend run dev",
+    "dev:gateway": "pnpm --filter api-gateway run dev",
     "dev:ai": "cd services/ai-scouting && python -m uvicorn main:app --reload --port 8001",
-    "dev:marketplace": "cd services/marketplace-monitor && npm run dev",
-    "dev:forte-actions": "cd services/forte-actions && npm run dev",
-    "dev:notifications": "cd services/notification-service && npm run dev",
-    "dev:monitoring": "cd services/monitoring-dashboard && npm run dev",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "test:performance": "cd packages/shared && npm run test:performance",
-    "benchmark": "cd packages/shared && npm run benchmark",
+    "dev:marketplace": "pnpm --filter marketplace-monitor run dev",
+    "dev:forte-actions": "pnpm --filter forte-actions run dev",
+    "dev:notifications": "pnpm --filter notification-service run dev",
+    "dev:monitoring": "pnpm --filter monitoring-dashboard run dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "test:performance": "pnpm --filter @fastbreak/shared run test:performance",
+    "benchmark": "pnpm --filter @fastbreak/shared run benchmark",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "format": "prettier --write .",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "flow:emulator": "flow emulator start",
-    "monitoring:dashboard": "cd services/monitoring-dashboard && npm start",
-    "db:optimize": "cd packages/database && npm run optimize",
-    "db:analyze": "cd packages/database && npm run analyze"
+    "monitoring:dashboard": "pnpm --filter monitoring-dashboard start",
+    "db:optimize": "pnpm --filter @fastbreak/database run optimize",
+    "db:analyze": "pnpm --filter @fastbreak/database run analyze"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.0.0",
@@ -43,6 +39,7 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  }
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
 }

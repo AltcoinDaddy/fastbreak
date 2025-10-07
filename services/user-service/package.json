@@ -11,9 +11,9 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@fastbreak/types": "1.0.0",
-    "@fastbreak/shared": "1.0.0",
-    "@fastbreak/database": "1.0.0",
+    "@fastbreak/types": "workspace:*",
+    "@fastbreak/shared": "workspace:*",
+    "@fastbreak/database": "workspace:*",
     "@onflow/fcl": "^1.12.0",
     "@onflow/types": "^1.0.5",
     "express": "^4.18.2",

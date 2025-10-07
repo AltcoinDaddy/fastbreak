@@ -14,9 +14,9 @@
     "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
-    "@fastbreak/types": "file:../../packages/types",
-    "@fastbreak/shared": "file:../../packages/shared",
-    "@fastbreak/database": "file:../../packages/database",
+    "@fastbreak/types": "workspace:*",
+    "@fastbreak/shared": "workspace:*",
+    "@fastbreak/database": "workspace:*",
     "@onflow/fcl": "^1.12.2",
     "@onflow/types": "^1.2.2",
     "@onflow/sdk": "^1.5.0",
